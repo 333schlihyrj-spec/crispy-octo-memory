@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
+
+  <title>Missile Dodge</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      background: #070a12;
+      color: white;
+      font-family: Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .game-container {
+      width: 100%;
+      max-width: 1100px;
+      height: 100vh;
+      max-height: 750px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ---------------- HEADER ---------------- */
+
+    .header {
+      height: 65px;
+      background: #111827;
+      border: 2px solid #27334d;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 18px;
+      z-index: 20;
+    }
+
+    .logo {
+      color: #5ee7ff;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .stats {
+      display: flex;
+      gap: 18px;
+      font-size: 14px;
+    }
+
+    .stats span {
+      color: #ffd166;
+      font-weight: bold;
+    }
+
+    /* ---------------- GAME ---------------- */
+
+    #game {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+
+      background:
+        radial-gradient(circle at 10% 20%, #ffffff 0 1px, transparent 2px),
+        radial-gradient(circle at 30% 45%, #ffffff 0 1px, transparent 2px),
+        radial-gradient(circle at 60% 18%, #ffffff 0 1px, transparent 2px),
+        radial-gradient(circle at 85% 30%, #ffffff 0 1px, transparent 2px),
+        linear-gradient(#0c1225, #151d35);
+
+      background-size:
+        180px 140px,
+        240px 180px,
+        200px 160px,
+        300px 200px,
+        auto;
+    }
+
+    /* Moon */
+
+    .moon {
+      position: absolute;
+      top: 35px;
+      right: 12%;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #fff4c2;
+      box-shadow: 0 0 40px rgba(255, 244, 194, 0.4);
+    }
+
+    /* ---------------- GROUND ---------------- */
+
+    .ground {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 70px;
+      background: #252d3d;
+      border-top: 4px solid #65738c;
+    }
+
+    .ground::after {
+      content: "";
+      position: absolute;
+      top: 12px;
+      width: 100%;
+      height: 5px;
+      background: repeating-linear-gradient(
+        90deg,
+        #3d475a 0 30px,
+        transparent 30px 60px
+      );
+    }
+
+    /* ---------------- PLAYER ---------------- */
+
+    #player {
+      position: absolute;
+      left: 90px;
+      bottom: 70px;
+      width: 45px;
+      height: 70px;
+      z-index: 10;
+
+      transition:
+        height 0.08s,
+        bottom 0.05s;
+    }
+
+    .head {
+      position: absolute;
+      top: 0;
+      left: 10px;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #5ee7ff;
+      box-shadow: 0 0 15px #5ee7ff88;
+    }
+
+    .body {
+      position: absolute;
+      left: 7px;
+      bottom: 0;
+      width: 31px;
+      height: 43px;
+      border-radius: 8px;
+      background: #27aac3;
+    }
+
+    .arm {
+      position: absolute;
+      width: 9px;
+      height: 30px;
+      background: #5ee7ff;
+      border-radius: 10px;
+      top: 30px;
+    }
+
+    .arm.left {
+      left: -5px;
+      transform: rotate(15deg);
+    }
+
+    .arm.right {
+      right: -5px;
+      transform: rotate(-15deg);
+    }
+
+    .leg {
+      position: absolute;
+      bottom: -18px;
+      width: 10px;
+      height: 22px;
+      background: #197e94;
+      border-radius: 8px;
+    }
+
+    .leg.left {
+      left: 8px;
+    }
+
+    .leg.right {
+      right: 8px;
+    }
+
+    /* Ducking */
+
+    #player.ducking {
+      height: 42px;
+      bottom: 70px;
+    }
+
+    #player.ducking .head {
+      top: 15px;
+      left: 8px;
+      width: 24px;
+      height: 24px;
+    }
+
+    #player.ducking .body {
+      height: 24px;
+      bottom: 0;
+    }
+
+    #player.ducking .arm {
+      top: 12px;
+      height: 20px;
+    }
+
+    #player.ducking .leg {
+      bottom: -17px;
+    }
+
+    /* ---------------- MISSILE ---------------- */
+
+    .missile {
+      position: absolute;
+      width: 85px;
+      height: 24px;
+      z-index: 8;
+      pointer-events: none;
+    }
+
+    .missile-body {
+      position: absolute;
+      left: 10px;
+      top: 4px;
+      width: 62px;
+      height: 16px;
+      border-radius: 10px;
+      background: linear-gradient(
+        90deg,
+        #e52521,
+        #ff6548
+      );
+
+      box-shadow:
+        0 0 14px rgba(255, 50, 40, 0.7);
+    }
+
+    .missile-nose {
+      position: absolute;
+      right: 0;
+      top: 4px;
+
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 18px solid #ff4035;
+    }
+
+    .missile-fin {
+      position: absolute;
+      left: 25px;
+      bottom: 0;
+      width: 14px;
+      height: 8px;
+      background: #a8171d;
+      transform: skewX(-25deg);
+    }
+
+    .flame {
+      position: absolute;
+      left: 0;
+      top: 7px;
+      width: 20px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ffd166;
+      box-shadow: 0 0 15px #ff762d;
+      animation: flame 0.08s infinite alternate;
+    }
+
+    @keyframes flame {
+      from {
+        transform: scaleX(0.7);
+      }
+
+      to {
+        transform: scaleX(1.2);
+      }
+    }
+
+    /* ---------------- EXPLOSION ---------------- */
+
+    .explosion {
+      position: absolute;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+
+      background:
+        radial-gradient(
+          circle,
+          white 0 8%,
+          #ffd166 10% 30%,
+          #ff633f 35% 55%,
+          transparent 70%
+        );
+
+      animation: explode 0.35s forwards;
+      pointer-events: none;
+      z-index: 30;
+    }
+
+    @keyframes explode {
+      from {
+        transform: scale(0.2);
+        opacity: 1;
+      }
+
+      to {
+        transform: scale(1.5);
+        opacity: 0;
+      }
+    }
+
+    /* ---------------- START SCREEN ---------------- */
+
+    #overlay {
+      position: absolute;
+      inset: 0;
+
+      background: rgba(3, 6, 15, 0.82);
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      z-index: 50;
+    }
+
+    .menu {
+      width: min(420px, 90%);
+      text-align: center;
+
+      background: #101827;
+      border: 2px solid #34425e;
+      border-radius: 18px;
+
+      padding: 30px 20px;
+
+      box-shadow:
+        0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .menu h1 {
+      color: #5ee7ff;
+      font-size: 38px;
+      margin-bottom: 12px;
+    }
+
+    .menu p {
+      color: #b6c1d8;
+      line-height: 1.6;
+      margin-bottom: 22px;
+    }
+
+    .start-button {
+      border: none;
+      border-radius: 12px;
+
+      padding: 14px 35px;
+
+      font-size: 18px;
+      font-weight: bold;
+
+      color: #071018;
+      background: #5ee7ff;
+
+      cursor: pointer;
+    }
+
+    /* ---------------- MOBILE CONTROLS ---------------- */
+
+    .controls {
+      height: 115px;
+      background: #0d1423;
+
+      border: 2px solid #27334d;
+      border-top: none;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      gap: 25px;
+
+      padding: 12px;
+    }
+
+    .control-button {
+      width: 120px;
+      height: 85px;
+
+      border: 2px solid #3d4c6b;
+      border-radius: 18px;
+
+      background: #182238;
+      color: white;
+
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      font-size: 36px;
+      font-weight: bold;
+
+      box-shadow:
+        0 6px 0 #0a0f1b;
+
+      cursor: pointer;
+
+      touch-action: none;
+    }
+
+    .control-button small {
+      font-size: 13px;
+      color: #9aa7c2;
+      margin-top: 3px;
+    }
+
+    .control-button:active {
+      transform: translateY(5px);
+      box-shadow: 0 1px 0 #0a0f1b;
+      background: #243352;
+    }
+
+    /* ---------------- DESKTOP ---------------- */
+
+    @media (min-width: 700px) {
+
+      .controls {
+        height: 80px;
+      }
+
+      .control-button {
+        width: 140px;
+        height: 55px;
+        flex-direction: row;
+        gap: 8px;
+        font-size: 26px;
+      }
+
+      .control-button small {
+        font-size: 14px;
+        margin: 0;
+      }
+    }
+
+    /* Small phones */
+
+    @media (max-width: 380px) {
+
+      .header {
+        height: 55px;
+        padding: 0 10px;
+      }
+
+      .logo {
+        font-size: 15px;
+      }
+
+      .stats {
+        gap: 7px;
+        font-size: 11px;
+      }
+
+      .controls {
+        height: 100px;
+        gap: 12px;
+      }
+
+      .control-button {
+        width: 105px;
+        height: 75px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="game-container">
+
+  <!-- HEADER -->
+
+  <div class="header">
+
+    <div class="logo">
+      🚀 MISSILE DODGE
+    </div>
+
+    <div class="stats">
+      Score: <span id="score">0</span>
+      Lives: <span id="lives">3</span>
+      Level: <span id="level">1</span>
+    </div>
+
+  </div>
+
+
+  <!-- GAME -->
+
+  <div id="game">
+
+    <div class="moon"></div>
+
+    <!-- PLAYER -->
+
+    <div id="player">
+
+      <div class="head"></div>
+
+      <div class="body"></div>
+
+      <div class="arm left"></div>
+      <div class="arm right"></div>
+
+      <div class="leg left"></div>
+      <div class="leg right"></div>
+
+    </div>
+
+    <div class="ground"></div>
+
+
+    <!-- START / GAME OVER -->
+
+    <div id="overlay">
+
+      <div class="menu">
+
+        <h1>MISSILE DODGE</h1>
+
+        <p id="menuText">
+          Jump over missiles and duck under
+          dangerous incoming attacks!
+          <br><br>
+
+          <b>↑ Jump</b>
+          &nbsp;&nbsp;
+          <b>↓ Duck</b>
+        </p>
+
+        <button class="start-button" id="startButton">
+          START GAME
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- MOBILE CONTROLS -->
+
+  <div class="controls">
+
+    <button
+      class="control-button"
+      id="jumpButton"
+      aria-label="Jump"
+    >
+      ↑
+      <small>JUMP</small>
+    </button>
+
+    <button
+      class="control-button"
+      id="duckButton"
+      aria-label="Duck"
+    >
+      ↓
+      <small>DUCK</small>
+    </button>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  /* =====================================================
+     GAME VARIABLES
+  ===================================================== */
+
+  const game = document.getElementById("game");
+  const player = document.getElementById("player");
+
+  const scoreText = document.getElementById("score");
+  const livesText = document.getElementById("lives");
+  const levelText = document.getElementById("level");
+
+  const overlay = document.getElementById("overlay");
+  const menuText = document.getElementById("menuText");
+  const startButton = document.getElementById("startButton");
+
+  const jumpButton = document.getElementById("jumpButton");
+  const duckButton = document.getElementById("duckButton");
+
+
+  let gameRunning = false;
+
+  let score = 0;
+  let lives = 3;
+  let level = 1;
+
+  let playerY = 0;
+  let velocityY = 0;
+
+  let missiles = [];
+
+  let lastTime = 0;
+  let spawnTimer = 0;
+
+
+  /* Physics */
+
+  const GRAVITY = 0.002;
+  const JUMP_POWER = 0.82;
+
+
+  /* =====================================================
+     START GAME
+  ===================================================== */
+
+  function startGame() {
+
+    score = 0;
+    lives = 3;
+    level = 1;
+
+    playerY = 0;
+    velocityY = 0;
+
+    player.classList.remove("ducking");
+
+    missiles.forEach(missile => {
+      missile.element.remove();
+    });
+
+    missiles = [];
+
+    updateUI();
+
+    overlay.style.display = "none";
+
+    gameRunning = true;
+
+    lastTime = performance.now();
+    spawnTimer = 0;
+
+    requestAnimationFrame(gameLoop);
+  }
+
+
+  /* =====================================================
+     UI
+  ===================================================== */
+
+  function updateUI() {
+
+    scoreText.textContent = score;
+    livesText.textContent = lives;
+    levelText.textContent = level;
+
+  }
+
+
+  /* =====================================================
+     JUMP
+  ===================================================== */
+
+  function jump() {
+
+    if (!gameRunning) return;
+
+    /*
+      Player cannot jump while already in the air.
+    */
+
+    if (playerY <= 1) {
+
+      velocityY = JUMP_POWER;
+
+      // Jumping cancels ducking
+      player.classList.remove("ducking");
+
+    }
+
+  }
+
+
+  /* =====================================================
+     DUCK
+  ===================================================== */
+
+  function startDuck() {
+
+    if (!gameRunning) return;
+
+    /*
+      Allow ducking only while on the ground.
+    */
+
+    if (playerY <= 1) {
+      player.classList.add("ducking");
+    }
+
+  }
+
+
+  function stopDuck() {
+
+    player.classList.remove("ducking");
+
+  }
+
+
+  /* =====================================================
+     CREATE MISSILE
+  ===================================================== */
+
+  function createMissile() {
+
+    const missile = document.createElement("div");
+
+    missile.className = "missile";
+
+    missile.innerHTML = `
+      <div class="flame"></div>
+      <div class="missile-body"></div>
+      <div class="missile-fin"></div>
+      <div class="missile-nose"></div>
+    `;
+
+    game.appendChild(missile);
+
+
+    const gameWidth = game.clientWidth;
+
+
+    /*
+      There are two types of missiles:
+
+      LOW:
+      You need to jump.
+
+      HIGH:
+      You need to duck.
+    */
+
+    const highMissile = Math.random() < 0.30;
+
+
+    let missileY;
+
+    if (highMissile) {
+
+      // Missile travels at head height
+      missileY = 105;
+
+    } else {
+
+      // Missile travels near the player's feet/body
+      missileY = 78;
+
+    }
+
+
+    const data = {
+
+      element: missile,
+
+      x: gameWidth + 100,
+
+      y: missileY,
+
+      width: 85,
+
+      height: 24,
+
+      speed:
+        0.38 +
+        level * 0.035
+
+    };
+
+
+    missile.style.left =
+      data.x + "px";
+
+    missile.style.bottom =
+      data.y + "px";
+
+
+    missiles.push(data);
+
+  }
+
+
+  /* =====================================================
+     PLAYER UPDATE
+  ===================================================== */
+
+  function updatePlayer(delta) {
+
+    velocityY -= GRAVITY * delta;
+
+    playerY += velocityY * delta;
+
+
+    /*
+      Stop player at the ground.
+    */
+
+    if (playerY <= 0) {
+
+      playerY = 0;
+      velocityY = 0;
+
+    }
+
+
+    player.style.bottom =
+      (70 + playerY) + "px";
+
+
+    /*
+      You cannot duck while jumping.
+    */
+
+    if (playerY > 5) {
+
+      player.classList.remove("ducking");
+
+    }
+
+  }
+
+
+  /* =====================================================
+     COLLISION
+  ===================================================== */
+
+  function collision(missile) {
+
+    const playerLeft = 90;
+    const playerRight =
+      playerLeft + 45;
+
+
+    /*
+      When ducking, the player's
+      collision box becomes smaller.
+    */
+
+    let playerBottom =
+      70 + playerY;
+
+    let playerTop;
+
+
+    if (player.classList.contains("ducking")) {
+
+      playerTop =
+        playerBottom + 42;
+
+    } else {
+
+      playerTop =
+        playerBottom + 70;
+
+    }
+
+
+    const missileLeft =
+      missile.x;
+
+    const missileRight =
+      missile.x + missile.width;
+
+    const missileBottom =
+      missile.y;
+
+    const missileTop =
+      missileBottom + missile.height;
+
+
+    return (
+
+      playerRight > missileLeft &&
+      playerLeft < missileRight &&
+      playerTop > missileBottom &&
+      playerBottom < missileTop
+
+    );
+
+  }
+
+
+  /* =====================================================
+     EXPLOSION
+  ===================================================== */
+
+  function explosion(x, y) {
+
+    const effect =
+      document.createElement("div");
+
+    effect.className =
+      "explosion";
+
+    effect.style.left =
+      (x - 35) + "px";
+
+    effect.style.bottom =
+      (y - 35) + "px";
+
+    game.appendChild(effect);
+
+
+    setTimeout(() => {
+
+      effect.remove();
+
+    }, 400);
+
+  }
+
+
+  /* =====================================================
+     DAMAGE
+  ===================================================== */
+
+  function hitPlayer(missile) {
+
+    lives--;
+
+    explosion(
+      115,
+      100 + playerY
+    );
+
+
+    missile.element.remove();
+
+
+    updateUI();
+
+
+    if (lives <= 0) {
+
+      gameOver();
+
+    }
+
+  }
+
+
+  /* =====================================================
+     UPDATE MISSILES
+  ===================================================== */
+
+  function updateMissiles(delta) {
+
+    for (
+      let i = missiles.length - 1;
+      i >= 0;
+      i--
+    ) {
+
+      const missile =
+        missiles[i];
+
+
+      missile.x -=
+        missile.speed * delta;
+
+
+      missile.element.style.left =
+        missile.x + "px";
+
+
+      /*
+        Collision
+      */
+
+      if (collision(missile)) {
+
+        hitPlayer(missile);
+
+        missiles.splice(i, 1);
+
+        continue;
+
+      }
+
+
+      /*
+        Missile escaped.
+        Give the player a point.
+      */
+
+      if (missile.x < -120) {
+
+        missile.element.remove();
+
+        missiles.splice(i, 1);
+
+        score++;
+
+        level =
+          Math.floor(score / 10) + 1;
+
+        updateUI();
+
+      }
+
+    }
+
+  }
+
+
+  /* =====================================================
+     GAME LOOP
+  ===================================================== */
+
+  function gameLoop(time) {
+
+    if (!gameRunning) return;
+
+
+    const delta =
+      Math.min(
+        time - lastTime,
+        40
+      );
+
+
+    lastTime = time;
+
+
+    updatePlayer(delta);
+
+    updateMissiles(delta);
+
+
+    /*
+      Missile spawn rate gets faster
+      as the level increases.
+    */
+
+    spawnTimer += delta;
+
+
+    const spawnRate =
+      Math.max(
+        450,
+        1250 - level * 75
+      );
+
+
+    if (spawnTimer >= spawnRate) {
+
+      createMissile();
+
+      spawnTimer = 0;
+
+    }
+
+
+    requestAnimationFrame(gameLoop);
+
+  }
+
+
+  /* =====================================================
+     GAME OVER
+  ===================================================== */
+
+  function gameOver() {
+
+    gameRunning = false;
+
+    overlay.style.display = "flex";
+
+
+    menuText.innerHTML = `
+      You got hit!<br><br>
+
+      Final Score:
+      <strong>${score}</strong>
+      <br>
+
+      Level:
+      <strong>${level}</strong>
+      <br><br>
+
+      Try to beat your high score!
+    `;
+
+
+    startButton.textContent =
+      "PLAY AGAIN";
+
+  }
+
+
+  /* =====================================================
+     KEYBOARD CONTROLS
+  ===================================================== */
+
+  document.addEventListener(
+    "keydown",
+    event => {
+
+      if (event.code === "ArrowUp") {
+
+        event.preventDefault();
+
+        jump();
+
+      }
+
+
+      if (event.code === "ArrowDown") {
+
+        event.preventDefault();
+
+        startDuck();
+
+      }
+
+    }
+  );
+
+
+  document.addEventListener(
+    "keyup",
+    event => {
+
+      if (event.code === "ArrowDown") {
+
+        stopDuck();
+
+      }
+
+    }
+  );
+
+
+  /* =====================================================
+     MOBILE JUMP BUTTON
+  ===================================================== */
+
+  jumpButton.addEventListener(
+    "pointerdown",
+    event => {
+
+      event.preventDefault();
+
+      jump();
+
+    }
+  );
+
+
+  /* =====================================================
+     MOBILE DUCK BUTTON
+     Hold the button to stay ducking.
+  ===================================================== */
+
+  duckButton.addEventListener(
+    "pointerdown",
+    event => {
+
+      event.preventDefault();
+
+      startDuck();
+
+    }
+  );
+
+
+  duckButton.addEventListener(
+    "pointerup",
+    event => {
+
+      event.preventDefault();
+
+      stopDuck();
+
+    }
+  );
+
+
+  duckButton.addEventListener(
+    "pointercancel",
+    stopDuck
+  );
+
+
+  duckButton.addEventListener(
+    "pointerleave",
+    event => {
+
+      /*
+        On desktop, releasing the mouse
+        outside the button should stop ducking.
+      */
+
+      stopDuck();
+
+    }
+  );
+
+
+  /* =====================================================
+     START BUTTON
+  ===================================================== */
+
+  startButton.addEventListener(
+    "click",
+    startGame
+  );
+
+
+  /* =====================================================
+     INITIAL UI
+  ===================================================== */
+
+  updateUI();
+
+</script>
+
+</body>
+</html>
