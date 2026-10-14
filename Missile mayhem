@@ -1,1258 +1,798 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-  >
-
-  <title>Missile Dodge</title>
-
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-    }
-
-    body {
-      background: #070a12;
-      color: white;
-      font-family: Arial, sans-serif;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-    }
-
-    .game-container {
-      width: 100%;
-      max-width: 1100px;
-      height: 100vh;
-      max-height: 750px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    /* ---------------- HEADER ---------------- */
-
-    .header {
-      height: 65px;
-      background: #111827;
-      border: 2px solid #27334d;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 18px;
-      z-index: 20;
-    }
-
-    .logo {
-      color: #5ee7ff;
-      font-size: 20px;
-      font-weight: bold;
-    }
-
-    .stats {
-      display: flex;
-      gap: 18px;
-      font-size: 14px;
-    }
-
-    .stats span {
-      color: #ffd166;
-      font-weight: bold;
-    }
-
-    /* ---------------- GAME ---------------- */
-
-    #game {
-      position: relative;
-      flex: 1;
-      overflow: hidden;
-
-      background:
-        radial-gradient(circle at 10% 20%, #ffffff 0 1px, transparent 2px),
-        radial-gradient(circle at 30% 45%, #ffffff 0 1px, transparent 2px),
-        radial-gradient(circle at 60% 18%, #ffffff 0 1px, transparent 2px),
-        radial-gradient(circle at 85% 30%, #ffffff 0 1px, transparent 2px),
-        linear-gradient(#0c1225, #151d35);
-
-      background-size:
-        180px 140px,
-        240px 180px,
-        200px 160px,
-        300px 200px,
-        auto;
-    }
-
-    /* Moon */
-
-    .moon {
-      position: absolute;
-      top: 35px;
-      right: 12%;
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background: #fff4c2;
-      box-shadow: 0 0 40px rgba(255, 244, 194, 0.4);
-    }
-
-    /* ---------------- GROUND ---------------- */
-
-    .ground {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 70px;
-      background: #252d3d;
-      border-top: 4px solid #65738c;
-    }
-
-    .ground::after {
-      content: "";
-      position: absolute;
-      top: 12px;
-      width: 100%;
-      height: 5px;
-      background: repeating-linear-gradient(
-        90deg,
-        #3d475a 0 30px,
-        transparent 30px 60px
-      );
-    }
-
-    /* ---------------- PLAYER ---------------- */
-
-    #player {
-      position: absolute;
-      left: 90px;
-      bottom: 70px;
-      width: 45px;
-      height: 70px;
-      z-index: 10;
-
-      transition:
-        height 0.08s,
-        bottom 0.05s;
-    }
-
-    .head {
-      position: absolute;
-      top: 0;
-      left: 10px;
-      width: 25px;
-      height: 25px;
-      border-radius: 50%;
-      background: #5ee7ff;
-      box-shadow: 0 0 15px #5ee7ff88;
-    }
-
-    .body {
-      position: absolute;
-      left: 7px;
-      bottom: 0;
-      width: 31px;
-      height: 43px;
-      border-radius: 8px;
-      background: #27aac3;
-    }
-
-    .arm {
-      position: absolute;
-      width: 9px;
-      height: 30px;
-      background: #5ee7ff;
-      border-radius: 10px;
-      top: 30px;
-    }
-
-    .arm.left {
-      left: -5px;
-      transform: rotate(15deg);
-    }
-
-    .arm.right {
-      right: -5px;
-      transform: rotate(-15deg);
-    }
-
-    .leg {
-      position: absolute;
-      bottom: -18px;
-      width: 10px;
-      height: 22px;
-      background: #197e94;
-      border-radius: 8px;
-    }
-
-    .leg.left {
-      left: 8px;
-    }
-
-    .leg.right {
-      right: 8px;
-    }
-
-    /* Ducking */
-
-    #player.ducking {
-      height: 42px;
-      bottom: 70px;
-    }
-
-    #player.ducking .head {
-      top: 15px;
-      left: 8px;
-      width: 24px;
-      height: 24px;
-    }
-
-    #player.ducking .body {
-      height: 24px;
-      bottom: 0;
-    }
-
-    #player.ducking .arm {
-      top: 12px;
-      height: 20px;
-    }
-
-    #player.ducking .leg {
-      bottom: -17px;
-    }
-
-    /* ---------------- MISSILE ---------------- */
-
-    .missile {
-      position: absolute;
-      width: 85px;
-      height: 24px;
-      z-index: 8;
-      pointer-events: none;
-    }
-
-    .missile-body {
-      position: absolute;
-      left: 10px;
-      top: 4px;
-      width: 62px;
-      height: 16px;
-      border-radius: 10px;
-      background: linear-gradient(
-        90deg,
-        #e52521,
-        #ff6548
-      );
-
-      box-shadow:
-        0 0 14px rgba(255, 50, 40, 0.7);
-    }
-
-    .missile-nose {
-      position: absolute;
-      right: 0;
-      top: 4px;
-
-      border-top: 8px solid transparent;
-      border-bottom: 8px solid transparent;
-      border-left: 18px solid #ff4035;
-    }
-
-    .missile-fin {
-      position: absolute;
-      left: 25px;
-      bottom: 0;
-      width: 14px;
-      height: 8px;
-      background: #a8171d;
-      transform: skewX(-25deg);
-    }
-
-    .flame {
-      position: absolute;
-      left: 0;
-      top: 7px;
-      width: 20px;
-      height: 10px;
-      border-radius: 50%;
-      background: #ffd166;
-      box-shadow: 0 0 15px #ff762d;
-      animation: flame 0.08s infinite alternate;
-    }
-
-    @keyframes flame {
-      from {
-        transform: scaleX(0.7);
-      }
-
-      to {
-        transform: scaleX(1.2);
-      }
-    }
-
-    /* ---------------- EXPLOSION ---------------- */
-
-    .explosion {
-      position: absolute;
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-
-      background:
-        radial-gradient(
-          circle,
-          white 0 8%,
-          #ffd166 10% 30%,
-          #ff633f 35% 55%,
-          transparent 70%
-        );
-
-      animation: explode 0.35s forwards;
-      pointer-events: none;
-      z-index: 30;
-    }
-
-    @keyframes explode {
-      from {
-        transform: scale(0.2);
-        opacity: 1;
-      }
-
-      to {
-        transform: scale(1.5);
-        opacity: 0;
-      }
-    }
-
-    /* ---------------- START SCREEN ---------------- */
-
-    #overlay {
-      position: absolute;
-      inset: 0;
-
-      background: rgba(3, 6, 15, 0.82);
-
-      display: flex;
-      justify-content: center;
-      align-items: center;
-
-      z-index: 50;
-    }
-
-    .menu {
-      width: min(420px, 90%);
-      text-align: center;
-
-      background: #101827;
-      border: 2px solid #34425e;
-      border-radius: 18px;
-
-      padding: 30px 20px;
-
-      box-shadow:
-        0 20px 60px rgba(0,0,0,0.5);
-    }
-
-    .menu h1 {
-      color: #5ee7ff;
-      font-size: 38px;
-      margin-bottom: 12px;
-    }
-
-    .menu p {
-      color: #b6c1d8;
-      line-height: 1.6;
-      margin-bottom: 22px;
-    }
-
-    .start-button {
-      border: none;
-      border-radius: 12px;
-
-      padding: 14px 35px;
-
-      font-size: 18px;
-      font-weight: bold;
-
-      color: #071018;
-      background: #5ee7ff;
-
-      cursor: pointer;
-    }
-
-    /* ---------------- MOBILE CONTROLS ---------------- */
-
-    .controls {
-      height: 115px;
-      background: #0d1423;
-
-      border: 2px solid #27334d;
-      border-top: none;
-
-      display: flex;
-      justify-content: center;
-      align-items: center;
-
-      gap: 25px;
-
-      padding: 12px;
-    }
-
-    .control-button {
-      width: 120px;
-      height: 85px;
-
-      border: 2px solid #3d4c6b;
-      border-radius: 18px;
-
-      background: #182238;
-      color: white;
-
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-
-      font-size: 36px;
-      font-weight: bold;
-
-      box-shadow:
-        0 6px 0 #0a0f1b;
-
-      cursor: pointer;
-
-      touch-action: none;
-    }
-
-    .control-button small {
-      font-size: 13px;
-      color: #9aa7c2;
-      margin-top: 3px;
-    }
-
-    .control-button:active {
-      transform: translateY(5px);
-      box-shadow: 0 1px 0 #0a0f1b;
-      background: #243352;
-    }
-
-    /* ---------------- DESKTOP ---------------- */
-
-    @media (min-width: 700px) {
-
-      .controls {
-        height: 80px;
-      }
-
-      .control-button {
-        width: 140px;
-        height: 55px;
-        flex-direction: row;
-        gap: 8px;
-        font-size: 26px;
-      }
-
-      .control-button small {
-        font-size: 14px;
-        margin: 0;
-      }
-    }
-
-    /* Small phones */
-
-    @media (max-width: 380px) {
-
-      .header {
-        height: 55px;
-        padding: 0 10px;
-      }
-
-      .logo {
-        font-size: 15px;
-      }
-
-      .stats {
-        gap: 7px;
-        font-size: 11px;
-      }
-
-      .controls {
-        height: 100px;
-        gap: 12px;
-      }
-
-      .control-button {
-        width: 105px;
-        height: 75px;
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Picture Vault</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: #10131c;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    padding: 22px;
+    background: #191e2c;
+    border-bottom: 1px solid #30374b;
+}
+
+header h1 { color: #a99aff; margin: 0 0 8px; }
+header p { color: #b7bfd2; margin: 0; }
+
+.container {
+    max-width: 1100px;
+    padding: 22px;
+    margin: auto;
+}
+
+.panel, .upload-box {
+    background: #1b2131;
+    border: 1px solid #353d53;
+    border-radius: 16px;
+    padding: 22px;
+    margin-bottom: 20px;
+}
+
+.upload-box {
+    text-align: center;
+    border: 2px dashed #7968ef;
+}
+
+.upload-box.dragging { background: #302950; }
+.upload-icon { font-size: 42px; }
+
+button, .upload-button {
+    display: inline-block;
+    border: 0;
+    border-radius: 9px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    background: #7968ef;
+    color: white;
+}
+
+button:hover, .upload-button:hover { filter: brightness(1.15); }
+button:disabled { opacity: .55; cursor: wait; }
+input[type="file"] { display: none; }
+
+input[type="search"],
+input[type="password"],
+input[type="text"] {
+    width: 100%;
+    padding: 13px;
+    border: 1px solid #353d53;
+    background: #121724;
+    border-radius: 9px;
+    color: white;
+    font-size: 16px;
+    margin: 7px 0 14px;
+}
+
+input:focus { outline: 2px solid #7968ef; }
+
+.muted, #count { color: #aab3ca; }
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 22px 0 16px;
+}
+
+.toolbar h2 { margin: 0; }
+
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 16px;
+}
+
+.photo {
+    overflow: hidden;
+    background: #1b2131;
+    border: 1px solid #30374b;
+    border-radius: 14px;
+}
+
+.photo img {
+    display: block;
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+    background: #090b11;
+    cursor: pointer;
+}
+
+.photo-info { padding: 12px; }
+.photo-name { overflow-wrap: anywhere; font-size: 14px; }
+.photo-date { color: #9da8bf; font-size: 12px; margin-bottom: 12px; }
+
+.photo-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+}
+
+.photo-actions button {
+    flex: 1;
+    min-width: 65px;
+    padding: 9px 5px;
+    font-size: 12px;
+}
+
+.secondary { background: #293750; }
+.danger { background: #49252e; color: #ffc0c8; }
+.secret { background: #633eb0; }
+.green { background: #24654d; }
+
+.empty {
+    text-align: center;
+    padding: 45px 10px;
+    color: #aab3ca;
+    grid-column: 1 / -1;
+}
+
+.empty div { font-size: 45px; }
+
+.status {
+    min-height: 18px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: #b8f5cf;
+    overflow-wrap: anywhere;
+}
+
+.error { color: #ffadb8; }
+
+#vaultPanel { display: none; }
+#vaultPanel.open { display: block; }
+
+.vault-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.lock-screen {
+    max-width: 420px;
+    margin: 20px auto;
+    padding: 25px;
+    border-radius: 14px;
+    text-align: center;
+    background: #151a28;
+}
+
+.lock-icon { font-size: 54px; }
+
+#viewer {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0,0,0,.95);
+    align-items: center;
+    justify-content: center;
+    padding: 65px 20px 20px;
+}
+
+#viewer.open { display: flex; }
+
+#viewer img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+#closeViewer {
+    position: absolute;
+    top: 15px;
+    right: 18px;
+    background: #292d3b;
+    font-size: 22px;
+}
+
+footer {
+    text-align: center;
+    color: #7e899f;
+    padding: 28px 15px;
+    font-size: 12px;
+}
+
+@media (max-width: 500px) {
+    .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .photo img { height: 140px; }
+    .container { padding: 14px; }
+}
+</style>
 </head>
 
 <body>
+<header>
+    <h1>📸 Picture Vault</h1>
+    <p>Your pictures. Your private vault. Your code.</p>
+</header>
 
-<div class="game-container">
+<main class="container">
 
-  <!-- HEADER -->
+    <section class="upload-box" id="dropZone">
+        <div class="upload-icon">🖼️</div>
+        <h2>Add Pictures</h2>
+        <p class="muted">Choose pictures from your device or drag them here.</p>
+        <label class="upload-button" for="fileInput">＋ Add Pictures</label>
+        <input type="file" id="fileInput" accept="image/*" multiple>
+        <div class="status" id="status" role="status"></div>
+    </section>
 
-  <div class="header">
+    <section class="panel">
+        <h2>🔐 Secret Vault</h2>
+        <p class="muted">Hide pictures from your main gallery and protect them with a passcode.</p>
+        <button type="button" id="openVault">🔒 Open Secret Vault</button>
+        <button type="button" id="changeCode" class="secondary">Change Passcode</button>
+    </section>
 
-    <div class="logo">
-      🚀 MISSILE DODGE
+    <section class="panel" id="vaultPanel">
+        <div class="vault-header">
+            <h2>🔐 My Secret Pictures</h2>
+            <button type="button" id="lockVault" class="danger">Lock Vault</button>
+        </div>
+
+        <div id="lockScreen" class="lock-screen">
+            <div class="lock-icon">🔒</div>
+            <h3>Vault Locked</h3>
+            <p class="muted">Enter your passcode to view hidden pictures.</p>
+            <form id="unlockForm">
+                <input id="unlockCode" type="password" placeholder="Enter passcode" required autocomplete="current-password">
+                <button type="submit">Unlock Pictures</button>
+            </form>
+            <div id="lockMessage" class="status" role="status"></div>
+        </div>
+
+        <div id="vaultContent" hidden>
+            <p class="muted">Your hidden pictures are shown below.</p>
+            <div class="gallery" id="secretGallery"></div>
+        </div>
+    </section>
+
+    <input type="search" id="search" placeholder="🔎 Search regular pictures..." aria-label="Search pictures">
+
+    <div class="toolbar">
+        <h2>My Gallery</h2>
+        <span id="count">0 pictures</span>
     </div>
 
-    <div class="stats">
-      Score: <span id="score">0</span>
-      Lives: <span id="lives">3</span>
-      Level: <span id="level">1</span>
-    </div>
+    <section class="gallery" id="gallery"></section>
+</main>
 
-  </div>
+<footer>Picture Vault · Stored in this browser on this device</footer>
 
-
-  <!-- GAME -->
-
-  <div id="game">
-
-    <div class="moon"></div>
-
-    <!-- PLAYER -->
-
-    <div id="player">
-
-      <div class="head"></div>
-
-      <div class="body"></div>
-
-      <div class="arm left"></div>
-      <div class="arm right"></div>
-
-      <div class="leg left"></div>
-      <div class="leg right"></div>
-
-    </div>
-
-    <div class="ground"></div>
-
-
-    <!-- START / GAME OVER -->
-
-    <div id="overlay">
-
-      <div class="menu">
-
-        <h1>MISSILE DODGE</h1>
-
-        <p id="menuText">
-          Jump over missiles and duck under
-          dangerous incoming attacks!
-          <br><br>
-
-          <b>↑ Jump</b>
-          &nbsp;&nbsp;
-          <b>↓ Duck</b>
-        </p>
-
-        <button class="start-button" id="startButton">
-          START GAME
-        </button>
-
-      </div>
-
-    </div>
-
-  </div>
-
-
-  <!-- MOBILE CONTROLS -->
-
-  <div class="controls">
-
-    <button
-      class="control-button"
-      id="jumpButton"
-      aria-label="Jump"
-    >
-      ↑
-      <small>JUMP</small>
-    </button>
-
-    <button
-      class="control-button"
-      id="duckButton"
-      aria-label="Duck"
-    >
-      ↓
-      <small>DUCK</small>
-    </button>
-
-  </div>
-
+<div id="viewer" role="dialog" aria-label="Picture viewer">
+    <button type="button" id="closeViewer" aria-label="Close picture viewer">✕</button>
+    <img id="viewerImage" alt="Enlarged picture">
 </div>
 
-
 <script>
+"use strict";
 
-  /* =====================================================
-     GAME VARIABLES
-  ===================================================== */
+const DB_NAME = "PictureVaultDatabase";
+const STORE_NAME = "pictures";
+const CODE_KEY = "pictureVaultPasscodeHash";
 
-  const game = document.getElementById("game");
-  const player = document.getElementById("player");
+const gallery = document.getElementById("gallery");
+const secretGallery = document.getElementById("secretGallery");
+const fileInput = document.getElementById("fileInput");
+const search = document.getElementById("search");
+const count = document.getElementById("count");
+const status = document.getElementById("status");
+const vaultPanel = document.getElementById("vaultPanel");
+const lockScreen = document.getElementById("lockScreen");
+const vaultContent = document.getElementById("vaultContent");
 
-  const scoreText = document.getElementById("score");
-  const livesText = document.getElementById("lives");
-  const levelText = document.getElementById("level");
+let db;
+let pictures = [];
+let vaultUnlocked = false;
+let viewerURL = null;
+let objectURLs = [];
+let busyIds = new Set();
 
-  const overlay = document.getElementById("overlay");
-  const menuText = document.getElementById("menuText");
-  const startButton = document.getElementById("startButton");
+function openDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
 
-  const jumpButton = document.getElementById("jumpButton");
-  const duckButton = document.getElementById("duckButton");
+        request.onupgradeneeded = () => {
+            const database = request.result;
 
+            if (!database.objectStoreNames.contains(STORE_NAME)) {
+                database.createObjectStore(STORE_NAME, {
+                    keyPath: "id",
+                    autoIncrement: true
+                });
+            }
+        };
 
-  let gameRunning = false;
+        request.onsuccess = () => {
+            db = request.result;
+            db.onversionchange = () => db.close();
+            resolve();
+        };
 
-  let score = 0;
-  let lives = 3;
-  let level = 1;
+        request.onerror = () => reject(request.error);
+    });
+}
 
-  let playerY = 0;
-  let velocityY = 0;
+function readPictures() {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readonly");
+        const request = tx.objectStore(STORE_NAME).getAll();
 
-  let missiles = [];
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
 
-  let lastTime = 0;
-  let spawnTimer = 0;
+function writePicture(picture) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).put(picture);
 
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("Could not save changes."));
+        tx.onabort = () => reject(tx.error || new Error("Save cancelled."));
+    });
+}
 
-  /* Physics */
+function addPicture(picture) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).add(picture);
 
-  const GRAVITY = 0.002;
-  const JUMP_POWER = 0.82;
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("Could not add picture."));
+        tx.onabort = () => reject(tx.error || new Error("Add cancelled."));
+    });
+}
 
+function removePicture(id) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).delete(id);
 
-  /* =====================================================
-     START GAME
-  ===================================================== */
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("Could not delete picture."));
+        tx.onabort = () => reject(tx.error || new Error("Delete cancelled."));
+    });
+}
 
-  function startGame() {
+function savedCodeHash() {
+    return localStorage.getItem(CODE_KEY);
+}
 
-    score = 0;
-    lives = 3;
-    level = 1;
+async function hashCode(code) {
+    if (!crypto.subtle) {
+        throw new Error("Secure hashing is unavailable. Try a current version of Chrome.");
+    }
 
-    playerY = 0;
-    velocityY = 0;
+    const bytes = new TextEncoder().encode(code);
+    const hash = await crypto.subtle.digest("SHA-256", bytes);
 
-    player.classList.remove("ducking");
+    return Array.from(new Uint8Array(hash))
+        .map(byte => byte.toString(16).padStart(2, "0"))
+        .join("");
+}
 
-    missiles.forEach(missile => {
-      missile.element.remove();
+function setStatus(message, error = false) {
+    status.textContent = message;
+    status.className = "status" + (error ? " error" : "");
+}
+
+function setLockMessage(message, error = false) {
+    const element = document.getElementById("lockMessage");
+    element.textContent = message;
+    element.className = "status" + (error ? " error" : "");
+}
+
+function cleanupURLs() {
+    objectURLs.forEach(url => URL.revokeObjectURL(url));
+    objectURLs = [];
+}
+
+function closeViewer() {
+    document.getElementById("viewer").classList.remove("open");
+
+    if (viewerURL) URL.revokeObjectURL(viewerURL);
+    viewerURL = null;
+    document.getElementById("viewerImage").src = "";
+}
+
+function showViewer(blob) {
+    closeViewer();
+    viewerURL = URL.createObjectURL(blob);
+    document.getElementById("viewerImage").src = viewerURL;
+    document.getElementById("viewer").classList.add("open");
+}
+
+document.getElementById("closeViewer").addEventListener("click", closeViewer);
+
+document.getElementById("viewer").addEventListener("click", event => {
+    if (event.target.id === "viewer") closeViewer();
+});
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape") closeViewer();
+});
+
+function makeEmpty(container, message, icon = "📷") {
+    const empty = document.createElement("div");
+    empty.className = "empty";
+
+    const emoji = document.createElement("div");
+    emoji.textContent = icon;
+
+    const heading = document.createElement("h3");
+    heading.textContent = message;
+
+    empty.append(emoji, heading);
+    container.appendChild(empty);
+}
+
+function makeCard(picture, isSecret) {
+    const card = document.createElement("article");
+    card.className = "photo";
+
+    const image = document.createElement("img");
+    const url = URL.createObjectURL(picture.blob);
+    objectURLs.push(url);
+
+    image.src = url;
+    image.alt = picture.name;
+    image.loading = "lazy";
+    image.addEventListener("click", () => showViewer(picture.blob));
+
+    const info = document.createElement("div");
+    info.className = "photo-info";
+
+    const name = document.createElement("h3");
+    name.className = "photo-name";
+    name.textContent = picture.name;
+
+    const date = document.createElement("div");
+    date.className = "photo-date";
+    date.textContent = "Added " +
+        new Date(picture.createdAt).toLocaleDateString();
+
+    const actions = document.createElement("div");
+    actions.className = "photo-actions";
+
+    const download = document.createElement("button");
+    download.type = "button";
+    download.className = "secondary";
+    download.textContent = "⬇ Download";
+
+    download.addEventListener("click", () => {
+        const downloadURL = URL.createObjectURL(picture.blob);
+        const link = document.createElement("a");
+        link.href = downloadURL;
+        link.download = picture.name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(downloadURL), 1500);
     });
 
-    missiles = [];
-
-    updateUI();
-
-    overlay.style.display = "none";
-
-    gameRunning = true;
-
-    lastTime = performance.now();
-    spawnTimer = 0;
-
-    requestAnimationFrame(gameLoop);
-  }
-
-
-  /* =====================================================
-     UI
-  ===================================================== */
-
-  function updateUI() {
-
-    scoreText.textContent = score;
-    livesText.textContent = lives;
-    levelText.textContent = level;
-
-  }
-
-
-  /* =====================================================
-     JUMP
-  ===================================================== */
-
-  function jump() {
-
-    if (!gameRunning) return;
-
-    /*
-      Player cannot jump while already in the air.
-    */
-
-    if (playerY <= 1) {
-
-      velocityY = JUMP_POWER;
-
-      // Jumping cancels ducking
-      player.classList.remove("ducking");
-
-    }
-
-  }
-
-
-  /* =====================================================
-     DUCK
-  ===================================================== */
-
-  function startDuck() {
-
-    if (!gameRunning) return;
-
-    /*
-      Allow ducking only while on the ground.
-    */
-
-    if (playerY <= 1) {
-      player.classList.add("ducking");
-    }
-
-  }
-
-
-  function stopDuck() {
-
-    player.classList.remove("ducking");
-
-  }
-
-
-  /* =====================================================
-     CREATE MISSILE
-  ===================================================== */
-
-  function createMissile() {
-
-    const missile = document.createElement("div");
-
-    missile.className = "missile";
-
-    missile.innerHTML = `
-      <div class="flame"></div>
-      <div class="missile-body"></div>
-      <div class="missile-fin"></div>
-      <div class="missile-nose"></div>
-    `;
-
-    game.appendChild(missile);
-
-
-    const gameWidth = game.clientWidth;
-
-
-    /*
-      There are two types of missiles:
-
-      LOW:
-      You need to jump.
-
-      HIGH:
-      You need to duck.
-    */
-
-    const highMissile = Math.random() < 0.30;
-
-
-    let missileY;
-
-    if (highMissile) {
-
-      // Missile travels at head height
-      missileY = 105;
-
-    } else {
-
-      // Missile travels near the player's feet/body
-      missileY = 78;
-
-    }
-
-
-    const data = {
-
-      element: missile,
-
-      x: gameWidth + 100,
-
-      y: missileY,
-
-      width: 85,
-
-      height: 24,
-
-      speed:
-        0.38 +
-        level * 0.035
-
-    };
-
-
-    missile.style.left =
-      data.x + "px";
-
-    missile.style.bottom =
-      data.y + "px";
-
-
-    missiles.push(data);
-
-  }
-
-
-  /* =====================================================
-     PLAYER UPDATE
-  ===================================================== */
-
-  function updatePlayer(delta) {
-
-    velocityY -= GRAVITY * delta;
-
-    playerY += velocityY * delta;
-
-
-    /*
-      Stop player at the ground.
-    */
-
-    if (playerY <= 0) {
-
-      playerY = 0;
-      velocityY = 0;
-
-    }
-
-
-    player.style.bottom =
-      (70 + playerY) + "px";
-
-
-    /*
-      You cannot duck while jumping.
-    */
-
-    if (playerY > 5) {
-
-      player.classList.remove("ducking");
-
-    }
-
-  }
-
-
-  /* =====================================================
-     COLLISION
-  ===================================================== */
-
-  function collision(missile) {
-
-    const playerLeft = 90;
-    const playerRight =
-      playerLeft + 45;
-
-
-    /*
-      When ducking, the player's
-      collision box becomes smaller.
-    */
-
-    let playerBottom =
-      70 + playerY;
-
-    let playerTop;
-
-
-    if (player.classList.contains("ducking")) {
-
-      playerTop =
-        playerBottom + 42;
-
-    } else {
-
-      playerTop =
-        playerBottom + 70;
-
-    }
-
-
-    const missileLeft =
-      missile.x;
-
-    const missileRight =
-      missile.x + missile.width;
-
-    const missileBottom =
-      missile.y;
-
-    const missileTop =
-      missileBottom + missile.height;
-
-
-    return (
-
-      playerRight > missileLeft &&
-      playerLeft < missileRight &&
-      playerTop > missileBottom &&
-      playerBottom < missileTop
-
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = isSecret ? "green" : "secret";
+    toggle.textContent = isSecret ? "👁 Unhide" : "🔒 Hide";
+
+    toggle.addEventListener("click", async () => {
+        if (busyIds.has(picture.id)) return;
+
+        if (isSecret && !vaultUnlocked) {
+            alert("Unlock the Secret Vault first.");
+            return;
+        }
+
+        if (!isSecret && !savedCodeHash()) {
+            alert("Open the Secret Vault and create a passcode first.");
+            return;
+        }
+
+        busyIds.add(picture.id);
+        toggle.disabled = true;
+
+        try {
+            const updated = { ...picture, hidden: !isSecret };
+            await writePicture(updated);
+            await refreshGallery();
+
+            setStatus(isSecret
+                ? "Picture successfully unhidden!"
+                : "Picture successfully hidden!");
+        } catch (error) {
+            console.error(error);
+            setStatus("Hide/Unhide failed: " + error.message, true);
+        } finally {
+            busyIds.delete(picture.id);
+            toggle.disabled = false;
+        }
+    });
+
+    const remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "danger";
+    remove.textContent = "🗑 Delete";
+
+    remove.addEventListener("click", async () => {
+        if (busyIds.has(picture.id)) return;
+
+        if (!confirm('Permanently delete "' + picture.name + '"?')) return;
+
+        busyIds.add(picture.id);
+        remove.disabled = true;
+
+        try {
+            await removePicture(picture.id);
+            await refreshGallery();
+            setStatus("Picture successfully deleted!");
+        } catch (error) {
+            console.error(error);
+            setStatus("Delete failed: " + error.message, true);
+        } finally {
+            busyIds.delete(picture.id);
+            remove.disabled = false;
+        }
+    });
+
+    actions.append(download, toggle, remove);
+    info.append(name, date, actions);
+    card.append(image, info);
+
+    return card;
+}
+
+function renderGallery() {
+    cleanupURLs();
+
+    const query = search.value.trim().toLowerCase();
+
+    const regular = pictures.filter(picture =>
+        !picture.hidden && picture.name.toLowerCase().includes(query)
     );
 
-  }
+    gallery.replaceChildren();
 
+    count.textContent =
+        `${regular.length} picture${regular.length === 1 ? "" : "s"}`;
 
-  /* =====================================================
-     EXPLOSION
-  ===================================================== */
+    if (!regular.length) {
+        makeEmpty(gallery,
+            query ? "No pictures match your search." : "Your gallery is empty.");
+    } else {
+        regular.forEach(picture => {
+            gallery.appendChild(makeCard(picture, false));
+        });
+    }
 
-  function explosion(x, y) {
+    renderSecretGallery();
+}
 
-    const effect =
-      document.createElement("div");
+function renderSecretGallery() {
+    secretGallery.replaceChildren();
 
-    effect.className =
-      "explosion";
+    if (!vaultUnlocked) return;
 
-    effect.style.left =
-      (x - 35) + "px";
+    const hidden = pictures.filter(picture => picture.hidden);
 
-    effect.style.bottom =
-      (y - 35) + "px";
+    if (!hidden.length) {
+        makeEmpty(secretGallery, "No hidden pictures yet.", "🗝️");
+        return;
+    }
 
-    game.appendChild(effect);
+    hidden.forEach(picture => {
+        secretGallery.appendChild(makeCard(picture, true));
+    });
+}
 
+async function refreshGallery() {
+    pictures = await readPictures();
+    pictures.sort((a, b) => b.createdAt - a.createdAt);
+    renderGallery();
+}
 
-    setTimeout(() => {
-
-      effect.remove();
-
-    }, 400);
-
-  }
-
-
-  /* =====================================================
-     DAMAGE
-  ===================================================== */
-
-  function hitPlayer(missile) {
-
-    lives--;
-
-    explosion(
-      115,
-      100 + playerY
+async function addFiles(fileList) {
+    const files = Array.from(fileList).filter(file =>
+        file.type.startsWith("image/")
     );
 
-
-    missile.element.remove();
-
-
-    updateUI();
-
-
-    if (lives <= 0) {
-
-      gameOver();
-
+    if (!files.length) {
+        setStatus("Please select image files.", true);
+        return;
     }
 
-  }
+    let saved = 0;
 
+    setStatus("Saving pictures...");
 
-  /* =====================================================
-     UPDATE MISSILES
-  ===================================================== */
-
-  function updateMissiles(delta) {
-
-    for (
-      let i = missiles.length - 1;
-      i >= 0;
-      i--
-    ) {
-
-      const missile =
-        missiles[i];
-
-
-      missile.x -=
-        missile.speed * delta;
-
-
-      missile.element.style.left =
-        missile.x + "px";
-
-
-      /*
-        Collision
-      */
-
-      if (collision(missile)) {
-
-        hitPlayer(missile);
-
-        missiles.splice(i, 1);
-
-        continue;
-
-      }
-
-
-      /*
-        Missile escaped.
-        Give the player a point.
-      */
-
-      if (missile.x < -120) {
-
-        missile.element.remove();
-
-        missiles.splice(i, 1);
-
-        score++;
-
-        level =
-          Math.floor(score / 10) + 1;
-
-        updateUI();
-
-      }
-
+    for (const file of files) {
+        try {
+            await addPicture({
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                createdAt: Date.now(),
+                hidden: false,
+                blob: file
+            });
+            saved++;
+        } catch (error) {
+            console.error(error);
+        }
     }
 
-  }
+    await refreshGallery();
+    setStatus(`Saved ${saved} of ${files.length} picture(s).`);
+}
 
+fileInput.addEventListener("change", async () => {
+    await addFiles(fileInput.files);
+    fileInput.value = "";
+});
 
-  /* =====================================================
-     GAME LOOP
-  ===================================================== */
+search.addEventListener("input", renderGallery);
 
-  function gameLoop(time) {
+const dropZone = document.getElementById("dropZone");
 
-    if (!gameRunning) return;
+dropZone.addEventListener("dragover", event => {
+    event.preventDefault();
+    dropZone.classList.add("dragging");
+});
 
+dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragging");
+});
 
-    const delta =
-      Math.min(
-        time - lastTime,
-        40
-      );
+dropZone.addEventListener("drop", async event => {
+    event.preventDefault();
+    dropZone.classList.remove("dragging");
+    await addFiles(event.dataTransfer.files);
+});
 
+function showLockedVault() {
+    vaultUnlocked = false;
+    lockScreen.hidden = false;
+    vaultContent.hidden = true;
+    document.getElementById("unlockCode").value = "";
+    setLockMessage("");
+    renderSecretGallery();
+}
 
-    lastTime = time;
+function lockVault() {
+    showLockedVault();
+    vaultPanel.classList.remove("open");
+    document.getElementById("openVault").textContent =
+        "🔒 Open Secret Vault";
+}
 
+async function createCode() {
+    const code = prompt("Create a passcode (4–128 characters):");
 
-    updatePlayer(delta);
+    if (code === null) return false;
 
-    updateMissiles(delta);
-
-
-    /*
-      Missile spawn rate gets faster
-      as the level increases.
-    */
-
-    spawnTimer += delta;
-
-
-    const spawnRate =
-      Math.max(
-        450,
-        1250 - level * 75
-      );
-
-
-    if (spawnTimer >= spawnRate) {
-
-      createMissile();
-
-      spawnTimer = 0;
-
+    if (code.length < 4 || code.length > 128) {
+        alert("Passcode must be between 4 and 128 characters.");
+        return false;
     }
 
+    const confirmation = prompt("Enter the same passcode again:");
 
-    requestAnimationFrame(gameLoop);
-
-  }
-
-
-  /* =====================================================
-     GAME OVER
-  ===================================================== */
-
-  function gameOver() {
-
-    gameRunning = false;
-
-    overlay.style.display = "flex";
-
-
-    menuText.innerHTML = `
-      You got hit!<br><br>
-
-      Final Score:
-      <strong>${score}</strong>
-      <br>
-
-      Level:
-      <strong>${level}</strong>
-      <br><br>
-
-      Try to beat your high score!
-    `;
-
-
-    startButton.textContent =
-      "PLAY AGAIN";
-
-  }
-
-
-  /* =====================================================
-     KEYBOARD CONTROLS
-  ===================================================== */
-
-  document.addEventListener(
-    "keydown",
-    event => {
-
-      if (event.code === "ArrowUp") {
-
-        event.preventDefault();
-
-        jump();
-
-      }
-
-
-      if (event.code === "ArrowDown") {
-
-        event.preventDefault();
-
-        startDuck();
-
-      }
-
+    if (confirmation !== code) {
+        alert("Passcodes did not match.");
+        return false;
     }
-  );
 
-
-  document.addEventListener(
-    "keyup",
-    event => {
-
-      if (event.code === "ArrowDown") {
-
-        stopDuck();
-
-      }
-
+    try {
+        localStorage.setItem(CODE_KEY, await hashCode(code));
+        alert("Your vault passcode has been saved!");
+        return true;
+    } catch (error) {
+        alert(error.message);
+        return false;
     }
-  );
+}
 
+document.getElementById("openVault").addEventListener("click", async () => {
+    vaultPanel.classList.add("open");
 
-  /* =====================================================
-     MOBILE JUMP BUTTON
-  ===================================================== */
+    if (!savedCodeHash()) {
+        const created = await createCode();
 
-  jumpButton.addEventListener(
-    "pointerdown",
-    event => {
-
-      event.preventDefault();
-
-      jump();
-
+        if (!created) {
+            vaultPanel.classList.remove("open");
+            return;
+        }
     }
-  );
 
+    showLockedVault();
 
-  /* =====================================================
-     MOBILE DUCK BUTTON
-     Hold the button to stay ducking.
-  ===================================================== */
+    document.getElementById("openVault").textContent =
+        "🔒 Vault Is Locked";
 
-  duckButton.addEventListener(
-    "pointerdown",
-    event => {
+    vaultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("unlockCode").focus();
+});
 
-      event.preventDefault();
+document.getElementById("unlockForm").addEventListener("submit", async event => {
+    event.preventDefault();
 
-      startDuck();
+    const input = document.getElementById("unlockCode");
 
+    try {
+        if (await hashCode(input.value) !== savedCodeHash()) {
+            setLockMessage("Incorrect passcode. Try again.", true);
+            input.value = "";
+            input.focus();
+            return;
+        }
+
+        vaultUnlocked = true;
+        lockScreen.hidden = true;
+        vaultContent.hidden = false;
+
+        document.getElementById("openVault").textContent =
+            "🔓 Vault Unlocked";
+
+        setLockMessage("");
+        renderSecretGallery();
+    } catch (error) {
+        setLockMessage(error.message, true);
     }
-  );
+});
 
+document.getElementById("lockVault").addEventListener("click", lockVault);
 
-  duckButton.addEventListener(
-    "pointerup",
-    event => {
-
-      event.preventDefault();
-
-      stopDuck();
-
+document.getElementById("changeCode").addEventListener("click", async () => {
+    if (!savedCodeHash()) {
+        await createCode();
+        return;
     }
-  );
 
+    const current = prompt("Enter your current passcode:");
+    if (current === null) return;
 
-  duckButton.addEventListener(
-    "pointercancel",
-    stopDuck
-  );
+    try {
+        if (await hashCode(current) !== savedCodeHash()) {
+            alert("Incorrect current passcode.");
+            return;
+        }
 
-
-  duckButton.addEventListener(
-    "pointerleave",
-    event => {
-
-      /*
-        On desktop, releasing the mouse
-        outside the button should stop ducking.
-      */
-
-      stopDuck();
-
+        await createCode();
+    } catch (error) {
+        alert(error.message);
     }
-  );
+});
 
+async function startApp() {
+    try {
+        await openDatabase();
+        await refreshGallery();
+    } catch (error) {
+        console.error(error);
+        setStatus("Unable to open storage: " + error.message, true);
+    }
+}
 
-  /* =====================================================
-     START BUTTON
-  ===================================================== */
-
-  startButton.addEventListener(
-    "click",
-    startGame
-  );
-
-
-  /* =====================================================
-     INITIAL UI
-  ===================================================== */
-
-  updateUI();
-
+startApp();
 </script>
-
 </body>
 </html>
